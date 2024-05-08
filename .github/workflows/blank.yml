@@ -85,6 +85,13 @@ jobs:
           # Get the latest tag
           latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
           echo "latest_tag=${latest_tag}" >> $GITHUB_OUTPUT
+          echo "latest_tag=${latest_tag}" > latest_tag.txt
+
+      - name: Upload Latest Tag as Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: latest_tag 
+          path: latest_tag.txt
       
       - name: Extract Version from Tag
         id: extract_version
