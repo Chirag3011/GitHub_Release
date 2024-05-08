@@ -1,63 +1,99 @@
-# This is a basic workflow to help you get started with Actions
+# # This is a basic workflow to help you get started with Actions
 
-name: CI
+# name: CI
 
-# Controls when the workflow will run
+# # Controls when the workflow will run
+# on:
+#   # Triggers the workflow on push or pull request events but only for the "master" branch
+#   push:
+#     branches: [ "master" ]
+#   pull_request:
+#     branches: [ "master" ]
+
+#   # Allows you to run this workflow manually from the Actions tab
+#   workflow_dispatch:
+
+# # A workflow run is made up of one or more jobs that can run sequentially or in parallel
+# jobs:
+#   # This workflow contains a single job called "build"
+#   build:
+#     # The type of runner that the job will run on
+#     runs-on: ubuntu-latest
+
+#     # Steps represent a sequence of tasks that will be executed as part of the job
+#     steps:
+#       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+#       - uses: actions/checkout@v4
+
+#       # Runs a single command using the runners shell
+#       - name: Run a one-line script
+#         run: echo Hello, world!
+
+#       # Runs a set of commands using the runners shell
+#       - name: Run a multi-line script
+#         run: |
+#           echo Add other actions to build,
+#           echo test, and deploy your project.
+#   metadata:
+#     runs-on: ubuntu-20.04
+#     outputs:
+#       ci_image_name: ${{ steps.ci_image_vars.outputs.ci_image_name }}
+#       ci_image_version: ${{ steps.ci_image_vars.outputs.ci_image_version }}
+#     steps:
+#       - name: Generate CI docker image name and version
+#         id: ci_image_vars
+#         # e.g. refs/head/feature/my-branch => $DOCKER_IMAGE-ci:my-branch
+#         run: |
+#           export GITHUB_TOKEN=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
+          
+#       - name: Create Sentry release
+#         uses: getsentry/action-release@v1
+#         env:
+#           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+#           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+#           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+#         with:
+#           environment: prod
+#           version: devices-service@${{ needs.version.outputs.tag_name }}
+#           ignore_missing: true
+
+name: Fetch Latest Tag and Version
+
 on:
-  # Triggers the workflow on push or pull request events but only for the "master" branch
   push:
-    branches: [ "master" ]
+    branches:
+      - main  # Change to your desired branches
   pull_request:
-    branches: [ "master" ]
+    branches:
+      - main  # Change to your desired branches
+  workflow_dispatch:  # Allows manual trigger of the workflow
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
+  fetch_version:
+    runs-on: ubuntu-latest  # Use Ubuntu-based GitHub Actions runner
+    
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
-
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - name: Checkout Code
+        uses: actions/checkout@v3  # Check out the repository code
+      
+      - name: Fetch All Tags
+        run: git fetch --tags  # Fetch all Git tags
+      
+      - name: Get Latest Tag
+        id: latest_tag
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
-  metadata:
-    runs-on: ubuntu-20.04
-    outputs:
-      ci_image_name: ${{ steps.ci_image_vars.outputs.ci_image_name }}
-      ci_image_version: ${{ steps.ci_image_vars.outputs.ci_image_version }}
-    steps:
-      - name: Generate CI docker image name and version
-        id: ci_image_vars
-        # e.g. refs/head/feature/my-branch => $DOCKER_IMAGE-ci:my-branch
+          # Get the latest tag
+          latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+          echo "::set-output name=latest_tag::$latest_tag"  # Set the latest tag as output
+      
+      - name: Extract Version from Tag
+        id: extract_version
         run: |
-          export branch_name="${GITHUB_HEAD_REF:-${GITHUB_REF}}"
-          export ci_image_version="${branch_name##*/}"
-          export ci_image_name="${DOCKER_IMAGE}:${ci_image_version}"
-          echo "Image name: ${ci_image_name}"
-          echo "Image version: ${ci_image_version}"
-          echo "::set-output name=ci_image_name::"${ci_image_name}""
-          echo "::set-output name=ci_image_version::"${ci_image_version}""
-          - name: Create Sentry release
-            uses: getsentry/action-release@v1
-              env:
-                SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-                SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-                SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-              with:
-                environment: prod
-                version: devices-service@${{ needs.version.outputs.tag_name }}
-                ignore_missing: true
+          # Assuming the tag follows semantic versioning (e.g., v1.0.0)
+          version=$(echo ${{ steps.latest_tag.outputs.latest_tag }} | sed 's/^v//')  # Remove leading 'v'
+          echo "::set-output name=version::$version"  # Set the version as output
+
+      - name: Display Latest Tag and Version
+        run: |
+          echo "Latest Tag: ${{ steps.latest_tag.outputs.latest_tag }}"
+          echo "Version: ${{ steps.extract_version.outputs.version }}"
