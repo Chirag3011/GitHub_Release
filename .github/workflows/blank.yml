@@ -86,12 +86,6 @@ jobs:
           latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
           echo "latest_tag=${latest_tag}" >> $GITHUB_OUTPUT
           echo "latest_tag=${latest_tag}" > latest_tag.txt
-
-      - name: Upload Latest Tag as Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: latest_tag 
-          path: latest_tag.txt
       
       - name: Extract Version from Tag
         id: extract_version
@@ -99,9 +93,25 @@ jobs:
           # Assuming the tag follows semantic versioning (e.g., v1.0.0)
           version=$(echo ${{ steps.latest_tag.outputs.latest_tag }} | sed 's/^v//')  # Remove leading 'v'
           echo "version=${version}" >> $GITHUB_OUTPUT
+          echo "version=${version}" >> latest_tag.txt
+
+      - name: Upload Latest Tag as Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: latest_tag 
+          path: latest_tag.txt
 
       - name: Display Latest Tag and Version
         run: |
           echo "Latest Tag: ${{ steps.latest_tag.outputs.latest_tag }}"
           echo "Version: ${{ steps.extract_version.outputs.version }}"
+
+      - name: Create a GitHub release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: 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
+        with:
+          tag_name: ${{latest_tag}}
+          release_name: Release ${{ latest_tag }}
+          # body: ${{ steps.tag_version.outputs.changelog }}
 
