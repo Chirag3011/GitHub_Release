@@ -84,16 +84,17 @@ jobs:
         run: |
           # Get the latest tag
           latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
-          echo "{latest_tag}=${latest_tag}" >> $GITHUB_OUTPUT
+          echo "latest_tag=${latest_tag}" >> $GITHUB_OUTPUT
       
       - name: Extract Version from Tag
         id: extract_version
         run: |
           # Assuming the tag follows semantic versioning (e.g., v1.0.0)
           version=$(echo ${{ steps.latest_tag.outputs.latest_tag }} | sed 's/^v//')  # Remove leading 'v'
-          echo "{version}=${version}" >> $GITHUB_OUTPUT
+          echo "version=${version}" >> $GITHUB_OUTPUT
 
       - name: Display Latest Tag and Version
         run: |
           echo "Latest Tag: ${{ steps.latest_tag.outputs.latest_tag }}"
           echo "Version: ${{ steps.extract_version.outputs.version }}"
+
