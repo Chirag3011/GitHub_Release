@@ -1,0 +1,26 @@
+---
+name: ekansh-test
+on:
+  pull_request:
+    types: ["opened", "edited", "reopened", "synchronize"]
+  push:
+    branches:
+      - master
+jobs:
+  metadata:
+    runs-on: ubuntu-20.04
+    outputs:
+      ci_image_name: ${{ steps.ci_image_vars.outputs.ci_image_name }}
+      ci_image_version: ${{ steps.ci_image_vars.outputs.ci_image_version }}
+    steps:
+      - name: Generate CI docker image name and version
+        id: ci_image_vars
+        # e.g. refs/head/feature/my-branch => $DOCKER_IMAGE-ci:my-branch
+        run: |
+          export branch_name="${GITHUB_HEAD_REF:-${GITHUB_REF}}"
+          export ci_image_version="${branch_name##*/}"
+          export ci_image_name="${DOCKER_IMAGE}:${ci_image_version}"
+          echo "Image name: ${ci_image_name}"
+          echo "Image version: ${ci_image_version}"
+          echo "::set-output name=ci_image_name::"${ci_image_name}""
+          echo "::set-output name=ci_image_version::"${ci_image_version}""
